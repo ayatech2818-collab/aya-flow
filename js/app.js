@@ -14,14 +14,15 @@
   const OC = window.OrgChart;
   const data = window.OrgData.build();
   const model = OC.createOrgModel(data);
-  showDataErrors(data.errors);
+  const workflow = window.WorkflowData ? window.WorkflowData.build(data) : { flows: [], errors: [] };
+  showDataErrors([...data.errors, ...workflow.errors]);
 
   /** Mistakes in data/org-data.js are listed on the page, not hidden in the console. */
   function showDataErrors(errors) {
     const box = document.getElementById("data-errors");
     if (!errors || !errors.length) return;
     box.innerHTML =
-      `<strong>${errors.length} ${errors.length === 1 ? "problem" : "problems"} in data/org-data.js</strong>` +
+      `<strong>${errors.length} ${errors.length === 1 ? "problem" : "problems"} in the data files</strong>` +
       `<ul>${errors.map((e) => `<li>${OC.esc(e)}</li>`).join("")}</ul>`;
     box.hidden = false;
   }
@@ -60,8 +61,24 @@
     tree: dom.tree,
     toolbar: document.getElementById("zoombar"),
     fullscreenTarget: dom.explorer,
-    onChange: () => popover.reposition(),
+    onChange: () => {
+      drawLines();
+      popover.reposition();
+    },
   });
+
+  /* Reporting lines are measured from the cards, so redraw whenever they move. */
+  let linesTimer = 0;
+  function drawLines() {
+    if (!dom.explorer.hidden) OC.drawConnectors(dom.tree);
+  }
+  function drawLinesSoon() {
+    drawLines();
+    clearTimeout(linesTimer);
+    linesTimer = setTimeout(drawLines, 450); // after enter animations / font swap
+  }
+  window.addEventListener("resize", drawLinesSoon);
+  document.fonts?.ready.then(drawLines);
   // Keep the pop-up attached to its role while the chart scrolls or pans.
   dom.canvas.addEventListener("scroll", () => (popover.isPinned ? popover.reposition() : popover.hide()), {
     passive: true,
@@ -108,6 +125,7 @@
     );
     dom.tree.replaceChildren(ul);
     entering = null;
+    drawLinesSoon();
 
     const total = model.allPaths(sys.id).filter((p) => model.hasChildren(model.path.leaf(p)));
     dom.expandAll.disabled = total.every((p) => state.expanded.has(p));
@@ -169,7 +187,7 @@
     if (ids[0] === sys.root) {
       valid = [ids[0]];
       for (const id of ids.slice(1)) {
-        if ((model.roles[valid.at(-1)].children || []).includes(id)) valid.push(id);
+        if (model.ownChildren(valid.at(-1)).includes(id)) valid.push(id);
         else break;
       }
     }
@@ -214,9 +232,18 @@
     for (const p of [...state.expanded]) if (model.path.isWithin(p, path)) state.expanded.delete(p);
   }
 
+  /* Managers who share a team open and close together. */
+  function isOpen(path) {
+    return model.memberPaths(path).some((p) => state.expanded.has(p));
+  }
+  function collapseGroup(path) {
+    for (const m of model.memberPaths(path)) collapseWithin(m);
+  }
+
   /** Animate a branch out, then run fn. */
   function leave(path, fn) {
-    const ul = dom.tree.querySelector(`.branch__children[data-children-of="${CSS.escape(path)}"]`);
+    const key = model.memberPaths(path)[0];
+    const ul = dom.tree.querySelector(`.branch__children[data-children-of="${CSS.escape(key)}"]`);
     if (!ul || reduceMotion.matches) return fn();
     ul.classList.add("is-leaving");
     setTimeout(fn, 170);
@@ -232,16 +259,16 @@
       announce(`${title} selected. No direct reports.`);
       return;
     }
-    if (state.expanded.has(path)) {
+    if (isOpen(path)) {
       leave(path, () => {
-        collapseWithin(path);
+        collapseGroup(path);
         state.selected = path;
         render();
         commit();
         announce(`${title} collapsed.`);
       });
     } else {
-      state.expanded.add(path);
+      for (const m of model.memberPaths(path)) state.expanded.add(m);
       state.selected = path;
       entering = path;
       render();
@@ -258,7 +285,7 @@
     const parent = sel ? model.path.parent(sel) : "";
     if (!sel || !parent) return closeSystem();
     leave(sel, () => {
-      collapseWithin(sel);
+      collapseGroup(sel);
       state.selected = parent;
       render();
       commit();
@@ -339,13 +366,13 @@
     if (!node) return;
     const path = node.dataset.path;
     const roleId = model.path.leaf(path);
-    if (e.key === "ArrowRight" && model.hasChildren(roleId) && !state.expanded.has(path)) {
+    if (e.key === "ArrowRight" && model.hasChildren(roleId) && !isOpen(path)) {
       e.preventDefault();
       activateNode(path);
       focusPath(path);
     } else if (e.key === "ArrowLeft") {
       e.preventDefault();
-      if (state.expanded.has(path)) {
+      if (isOpen(path)) {
         activateNode(path);
         setTimeout(() => focusPath(path), 200);
       } else if (model.path.parent(path)) {
@@ -384,7 +411,7 @@
     const below = state.selected && state.selected !== t ? state.selected : null;
     if (below) {
       const next = model.path.split(below).slice(0, model.path.split(t).length + 1);
-      collapseWithin(model.path.join(next));
+      collapseGroup(model.path.join(next));
     }
     state.selected = t;
     render();
@@ -407,6 +434,28 @@
       if (state.systemId) renderExplorer();
     }
   );
+
+  /* ───────────── workflow ───────────── */
+
+  if (workflow.flows.length) {
+    OC.WorkflowSection({
+      mount: document.getElementById("workflow"),
+      model,
+      flows: workflow.flows,
+      popover,
+      onOpenSystem: openSystem,
+      // A role chip in a step jumps to that role in the hierarchy.
+      onOpenRole(roleId) {
+        const systemId = model.roles[roleId].system;
+        const path = model.allPaths(systemId).find((p) => model.path.leaf(p) === roleId);
+        if (!path) return;
+        reveal(systemId, path);
+        requestAnimationFrame(() =>
+          dom.explorer.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" })
+        );
+      },
+    });
+  }
 
   /* ───────────── boot ───────────── */
   const initial = fromHash();

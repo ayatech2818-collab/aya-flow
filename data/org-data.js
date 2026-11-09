@@ -35,15 +35,21 @@
 
 /* ─────────────────────────── SYSTEMS ─────────────────────────── */
 
-system({ id: "erp", name: "ERP", fullName: "Enterprise Resource Planning", theme: "erp", icon: "building",
-  summary: "Leadership, finance and course approval: Super Admin, Admin, CED, CFD, CRD and Chairman." });
+system({
+  id: "erp", name: "ERP", fullName: "Enterprise Resource Planning", theme: "erp", icon: "building",
+  summary: "Leadership, finance and course approval: Super Admin, Admin, CED, CFD, CRD and Chairman."
+});
 
-system({ id: "crm", name: "CRM", fullName: "Customer Relationship Management", theme: "crm", icon: "users",
-  summary: "Sales under CSD and marketing under CMD, down to sales officers, creatives and SEO." });
+system({
+  id: "crm", name: "CRM", fullName: "Customer Relationship Management", theme: "crm", icon: "users",
+  summary: "Sales under CSD and marketing under CMD, down to sales officers, creatives and SEO."
+});
 
-system({ id: "lms", name: "LMS", fullName: "Raihan", theme: "lms", icon: "graduation",
+system({
+  id: "lms", name: "LMS", fullName: "Raihan", theme: "lms", icon: "graduation",
   summary: "Student enrollment and fees, fed by admissions taken in CRM.",
-  notice: "The source (page 2) lists Raihan's duties only. It draws no Super Admin, Admin or reporting roles for LMS, so none are shown here." });
+  notice: "The source (page 2) lists Raihan's duties only. It draws no Super Admin, Admin or reporting roles for LMS, so none are shown here."
+});
 
 
 /* ═══════════════════════════ ERP · page 1 ═══════════════════════════ */
@@ -225,6 +231,12 @@ duty("crm-elite-so", "Content sharing");
 duty("crm-elite-so", "Taking admission");
 duty("crm-elite-so", "Attend Meeting");
 
+
+
+duty("crm-cmd", "Sets overall marketing direction");
+duty("crm-cmd", "Holds final authority across brand");
+duty("crm-cmd", "Product marketing");
+
 /* ── Marketing · page 3 ── */
 page(3);
 
@@ -243,20 +255,53 @@ reports("crm-digital-marketer", "crm-strategist");
 reports("crm-smc", "crm-strategist");
 reports("crm-content-writer", "crm-strategist");
 
-// Creatives are drawn on one line shared by Media Coordinator and Digital Marketer
+// Media Coordinator's team
 role("crm-video-editor", "Video Editor", "crm-media-coord");
 role("crm-graphics", "Graphics Designer", "crm-media-coord");
 role("crm-video-maker", "Video Maker", "crm-media-coord");
-reports("crm-video-editor", "crm-digital-marketer");
-reports("crm-graphics", "crm-digital-marketer");
-reports("crm-video-maker", "crm-digital-marketer");
 
+// Digital Marketer's team
 role("crm-adm", "ADM", "crm-digital-marketer");
 role("crm-seo", "SEO", "crm-digital-marketer");
 role("crm-assistant-smc", "Assistant SMC", "crm-smc");
 
 // No duties are listed in the source for the CRM Super Admin, Admin, CSD, CMD
 // or any marketing role. Add them here with duty("role-id", "…");
+
+
+
+duty("crm-mm", "Leads MST, MC, PM and their reporting teams");
+duty("crm-mm", "runs team meetings");
+duty("crm-mm", "prepares meeting minutes");
+duty("crm-mm", "assigns tasks");
+duty("crm-mm", "tracks execution on the Kanban dashboard");
+
+
+
+duty("crm-performance", "Oversees DM, CC, and SMC");
+duty("crm-performance", "tracks campaign/ad performance and results");
+
+
+
+duty("crm-strategist", "Strategy and planning");
+
+
+
+duty("crm-media-coord", "Coordinates across media activities and roles,");
+duty("crm-media-coord", "keeping campaigns and schedules aligned");
+
+
+duty("crm-digital-marketer", "Runs paid ad campaigns");
+duty("crm-digital-marketer", "drives lead generation (WhatsApp-click leads, form-fill leads)");
+
+
+duty("crm-smc", "Manages social media posting, scheduling, and engagement");
+
+
+duty("crm-content-writer", "Produces content assets (videos, creatives, copy) for both branding and course/product promotion");
+
+
+duty("crm-seo", "Search Engine Optimization");
 
 
 /* ═══════════════════════════ LMS · page 2 ═══════════════════════════ */

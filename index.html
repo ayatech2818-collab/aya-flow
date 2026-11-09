@@ -7,6 +7,7 @@
     <meta name="description" content="Interactive organization hierarchy for ERP, CRM and LMS (Raihan)." />
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/org-chart.css" />
+    <link rel="stylesheet" href="css/workflow.css" />
   </head>
   <body>
     <a class="skip" href="#systems">Skip to systems</a>
@@ -72,10 +73,12 @@
           <li><span class="key__swatch key__swatch--path"></span>On the selected path</li>
           <li><span class="key__chip">3 ▾</span>Direct reports — click to expand</li>
           <li><span class="key__chip">ⓘ 2</span>Listed responsibilities — hover or tap</li>
-          <li><span class="key__chip key__chip--shared">Shared</span>Drawn under two managers in the source</li>
+          <li><span class="key__chip key__chip--shared">Also under…</span>Role repeated under a second manager</li>
           <li class="key__nav"><span class="key__chip">✥</span>Drag to move · Ctrl + scroll to zoom</li>
         </ul>
       </section>
+
+      <section id="workflow" class="wf" aria-labelledby="workflow-title"></section>
     </main>
 
     <div id="live" class="sr-only" aria-live="polite"></div>
@@ -83,15 +86,19 @@
     <!-- Data first, then model, components, controller -->
     <script src="data/org-builder.js"></script>
     <script src="data/org-data.js"></script>
+    <script src="data/workflow-builder.js"></script>
+    <script src="data/workflow-data.js"></script>
     <script src="js/org-model.js"></script>
     <script src="js/components/icons.js"></script>
     <script src="js/components/system-card.js"></script>
     <script src="js/components/hierarchy-node.js"></script>
     <script src="js/components/tree-branch.js"></script>
+    <script src="js/components/connectors.js"></script>
     <script src="js/components/breadcrumb.js"></script>
     <script src="js/components/responsibility-popover.js"></script>
     <script src="js/components/role-search.js"></script>
     <script src="js/components/canvas-viewport.js"></script>
+    <script src="js/components/workflow.js"></script>
     <script src="js/app.js"></script>
   </body>
 </html>

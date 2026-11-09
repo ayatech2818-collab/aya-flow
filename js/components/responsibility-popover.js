@@ -155,11 +155,14 @@
       hideTimer = setTimeout(hide, HIDE_DELAY);
     };
 
-    /** Wire hover/focus on a container whose descendants are .node buttons. */
-    function attach(root) {
+    /**
+     * Wire hover/focus on a container. `selector` matches the elements that
+     * carry data-role (hierarchy cards by default; workflow role chips too).
+     */
+    function attach(root, selector = ".node") {
       root.addEventListener("pointerover", (e) => {
         if (e.pointerType === "touch") return;
-        const node = e.target.closest(".node");
+        const node = e.target.closest(selector);
         if (!node || !root.contains(node)) return;
         clearTimeout(hideTimer);
         if (anchor === node) return;
@@ -168,13 +171,13 @@
       });
       root.addEventListener("pointerout", (e) => {
         if (e.pointerType === "touch") return;
-        const node = e.target.closest(".node");
+        const node = e.target.closest(selector);
         if (!node) return;
         if (e.relatedTarget && (node.contains(e.relatedTarget) || el.contains(e.relatedTarget))) return;
         scheduleHide();
       });
       root.addEventListener("focusin", (e) => {
-        const node = e.target.closest(".node");
+        const node = e.target.closest(selector);
         if (node && node.matches(":focus-visible")) showFor(node);
       });
       root.addEventListener("focusout", (e) => {
@@ -194,10 +197,21 @@
     });
     document.addEventListener("pointerdown", (e) => {
       if (el.hidden) return;
-      if (el.contains(e.target) || e.target.closest(".node")) return;
+      if (el.contains(e.target) || e.target.closest("[data-role]")) return;
       hide();
     });
     window.addEventListener("resize", () => anchor && place(anchor));
+
+    // In full screen only the full-screen element is drawn, so the pop-up
+    // has to live inside it; it moves back to <body> afterwards.
+    const onFullscreen = () => {
+      const host = document.fullscreenElement || document.webkitFullscreenElement || document.body;
+      if (el.parentElement !== host) host.appendChild(el);
+      if (anchor && anchor.isConnected) place(anchor);
+      else hide();
+    };
+    document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("webkitfullscreenchange", onFullscreen);
     window.addEventListener("scroll", () => anchor && (pinned ? place(anchor) : hide()), { passive: true });
 
     return {
@@ -208,7 +222,9 @@
       /** After a re-render the old anchor element is gone; re-bind by path. */
       rebind(root) {
         if (!anchor) return;
+        if (anchor.isConnected && !root.contains(anchor)) return; // e.g. a workflow chip
         const path = anchor.dataset.path;
+        if (!path) return hide();
         const next = root.querySelector(`.node[data-path="${CSS.escape(path)}"]`);
         if (next) {
           anchor = next;

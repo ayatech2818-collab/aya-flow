@@ -3,8 +3,8 @@
  *
  * A node on screen is identified by its PATH: the role ids from the
  * system root down to it, joined by "/". Paths (not role ids) are what
- * get expanded and selected, because a shared role (two parents) appears
- * twice in the tree.
+ * get expanded and selected, because a role with two managers who are
+ * not siblings (e.g. SO) appears twice in the tree.
  */
 (function () {
   "use strict";
@@ -42,12 +42,65 @@
       isWithin: (p, base) => p === base || p.startsWith(base + SEP),
     };
 
+    /*
+     * Shared teams.
+     * A "joint" child reports to two or more managers who are themselves
+     * siblings (same manager), e.g. the team under Performance Marketer and
+     * Marketing Strategist. Such a child is drawn ONCE, under its first
+     * manager in the data, with lines from every manager. The managers are
+     * drawn side by side as a "joint group".
+     * A child whose managers are not siblings (e.g. SO under CSDO and under
+     * SDO) is still drawn under each manager.
+     */
+    function isJointChild(c) {
+      const ps = parents[c] || [];
+      if (ps.length < 2) return false;
+      const gp = (parents[ps[0]] || [])[0];
+      return gp !== undefined && ps.every((p) => (parents[p] || [])[0] === gp);
+    }
+
+    /** Children drawn under this role (joint children only under their first manager). */
+    function ownChildren(id) {
+      return (roles[id].children || []).filter((c) => !isJointChild(c) || parents[c][0] === id);
+    }
+
+    /** Split sibling ids into groups that share joint children; order kept. */
+    function groupSiblings(ids) {
+      const set = new Set(ids);
+      const up = new Map(ids.map((i) => [i, i]));
+      const find = (x) => (up.get(x) === x ? x : (up.set(x, find(up.get(x))), up.get(x)));
+      for (const s of ids)
+        for (const c of roles[s].children || [])
+          if (isJointChild(c)) for (const p of parents[c]) if (set.has(p)) up.set(find(p), find(s));
+      const groups = new Map();
+      for (const i of ids) {
+        const r = find(i);
+        if (!groups.has(r)) groups.set(r, []);
+        groups.get(r).push(i);
+      }
+      return [...groups.values()];
+    }
+
+    /** Ids drawn as children of the group that the node at `p` belongs to. */
+    function childIdsBelow(p) {
+      return memberPaths(p).flatMap((mp) => ownChildren(path.leaf(mp)));
+    }
+
+    /** Paths of every manager in the joint group of the node at `p` (just [p] if none). */
+    function memberPaths(p) {
+      const pp = path.parent(p);
+      if (!pp) return [p];
+      const id = path.leaf(p);
+      const group = groupSiblings(childIdsBelow(pp)).find((g) => g.includes(id)) || [id];
+      return group.map((m) => path.child(pp, m));
+    }
+
     /** Depth-first list of every path in a system. */
     function allPaths(systemId) {
       const out = [];
       const walk = (id, p) => {
         out.push(p);
-        for (const c of roles[id].children || []) walk(c, path.child(p, c));
+        for (const c of ownChildren(id)) walk(c, path.child(p, c));
       };
       const root = systemById[systemId].root;
       walk(root, root);
@@ -131,6 +184,10 @@
       path,
       allPaths,
       hasChildren,
+      isJointChild,
+      ownChildren,
+      groupSiblings,
+      memberPaths,
       stats,
       linksFrom,
       linksTo,

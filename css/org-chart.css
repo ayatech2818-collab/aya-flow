@@ -169,7 +169,7 @@ body[data-system=""] #btn-back { visibility: hidden; }
   border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   background: var(--color-surface); box-shadow: var(--shadow);
   overflow: hidden;
-  animation: panel-in .45s var(--ease) both;
+  animation: panel-in .45s var(--ease) backwards; /* no lasting transform, so pop-ups stay viewport-fixed in full screen */
 }
 .explorer__head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap;
@@ -252,54 +252,46 @@ body[data-system=""] #btn-back { visibility: hidden; }
 .key__chip--shared { background: #fff6e5; color: #9a5b00; }
 
 /* ───────────────────────── Tree + connectors ─────────────────────────
- * Top-down org chart drawn with borders on <ul>/<li> pseudo-elements:
- *   .branch__children::before  vertical stub under the manager
- *   .branch::before / ::after  half of the horizontal bar + drop to the report
+ * Cards are laid out with nested <ul>/<li> flexboxes. The reporting lines
+ * are one SVG behind the cards, drawn by js/components/connectors.js from
+ * the cards' real positions, so a report can have two managers.
  */
 .tree {
   --gap-y: 30px;
   --gap-x: 9px;
-  --line: 2px solid var(--sys-line);
   --node-w: 188px;
+  position: relative;
   width: max-content; min-width: 100%;
   padding: 28px 28px 84px; /* bottom room for the zoom bar */
 }
 .tree ul { margin: 0; padding: 0; list-style: none; }
 .tree__root { display: flex; justify-content: center; }
 .branch {
-  position: relative;
+  position: relative; z-index: 1;
   display: flex; flex-direction: column; align-items: center;
   padding: var(--gap-y) var(--gap-x) 0;
 }
 .tree__root > .branch { padding-top: 0; }
 .tree .branch__children { position: relative; display: flex; justify-content: center; padding-top: var(--gap-y); }
-
-.branch__children::before {
-  content: ""; position: absolute; top: 0; left: 50%; height: var(--gap-y);
-  border-left: var(--line); margin-left: -1px;
-}
-.branch__children > .branch::before,
-.branch__children > .branch::after {
-  content: ""; position: absolute; top: 0; width: 50%; height: var(--gap-y);
-  border-top: var(--line);
-}
-.branch__children > .branch::before { right: 50%; }
-.branch__children > .branch::after { left: 50%; border-left: var(--line); margin-left: -1px; }
 .branch__children > .branch:only-child { padding-top: 0; }
-.branch__children > .branch:only-child::before,
-.branch__children > .branch:only-child::after { display: none; }
-.branch__children > .branch:first-child::before,
-.branch__children > .branch:last-child::after { border: 0 none; }
-.branch__children > .branch:last-child::before { border-right: var(--line); border-top-right-radius: 12px; margin-right: -1px; }
-.branch__children > .branch:first-child::after { border-top-left-radius: 12px; }
 
-/* Lines on the selected path get the system colour. */
-.branch:has(> .node.is-on-path) > .branch__children::before,
-.branch:has(> .node.is-selected) > .branch__children::before { border-left-color: var(--sys); }
+/* Managers who share a team stand side by side; the team sits below both. */
+.joint { display: flex; align-items: flex-start; gap: calc(var(--gap-x) * 2 + 8px); }
+
+.connectors {
+  position: absolute; left: 0; top: 0; z-index: 0;
+  overflow: visible; pointer-events: none;
+}
+.connectors path {
+  fill: none; stroke: var(--sys-line); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.connectors path.is-active { stroke: var(--sys); }
 
 /* expand / collapse motion */
 .branch__children.is-entering { animation: branch-in .34s var(--ease) both; }
-.branch__children.is-entering > .branch > .node { animation: node-in .38s var(--ease) both; }
+.branch__children.is-entering > .branch > .node,
+.branch__children.is-entering > .branch > .joint > .node { animation: node-in .38s var(--ease) both; }
 .branch__children.is-entering > .branch:nth-child(2) > .node { animation-delay: .03s; }
 .branch__children.is-entering > .branch:nth-child(3) > .node { animation-delay: .06s; }
 .branch__children.is-entering > .branch:nth-child(4) > .node { animation-delay: .09s; }
@@ -527,39 +519,20 @@ body[data-system=""] #btn-back { visibility: hidden; }
   .zoombar, .key__nav { display: none; }
   .canvas { cursor: auto; }
 
-  .tree { --rail: 9px; --tick: 11px; --node-mid: 30px; width: auto; min-width: 0; padding: 14px 10px 22px; }
+  .tree { --rail: 9px; --tick: 11px; width: auto; min-width: 0; padding: 14px 10px 22px; }
   .node__body { padding: 9px 4px 9px 10px; }
   .node__title { font-size: 14px; }
   .tree__root { display: block; }
   .branch { display: block; padding: 0; }
   .tree .branch__children { display: block; padding: 0; margin-left: var(--rail); }
-  .branch__children::before { display: none; }
   .node { width: 100%; }
+  .branch__children > .branch,
+  .branch__children > .branch:only-child { padding: 10px 0 0 var(--tick); }
+  .joint { display: block; }
+  .joint > .node + .node { margin-top: 8px; }
 
-  .branch__children > .branch { padding: 10px 0 0 var(--tick); }
-  .branch__children > .branch:only-child { padding-top: 10px; }
-  .branch__children > .branch::before,
-  .branch__children > .branch:first-child::before,
-  .branch__children > .branch:last-child::before,
-  .branch__children > .branch:only-child::before {
-    display: block; content: "";
-    position: absolute; top: 0; bottom: 0; left: 0; right: auto;
-    width: 0; height: auto;
-    border: 0 none; border-left: var(--line); border-radius: 0; margin: 0;
-  }
-  .branch__children > .branch:last-child::before { bottom: auto; height: calc(10px + var(--node-mid)); }
-  .branch__children > .branch::after,
-  .branch__children > .branch:first-child::after,
-  .branch__children > .branch:last-child::after,
-  .branch__children > .branch:only-child::after {
-    display: block; content: "";
-    position: absolute; top: calc(10px + var(--node-mid)); left: 0; right: auto;
-    width: var(--tick); height: 0;
-    border: 0 none; border-top: var(--line); border-radius: 0; margin: 0;
-  }
-  .branch__children > .branch:last-child::before { border-bottom-left-radius: 10px; }
-
-  .branch__children.is-entering > .branch > .node { animation-name: node-in-side; }
+  .branch__children.is-entering > .branch > .node,
+  .branch__children.is-entering > .branch > .joint > .node { animation-name: node-in-side; }
   @keyframes node-in-side { from { opacity: 0; transform: translateX(-8px); } }
 }
 
