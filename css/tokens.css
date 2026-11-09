@@ -1,0 +1,74 @@
+/*
+ * Design tokens.
+ *
+ * Brand values are copied from Ayadi Cloudversity's design system
+ * (Ayadi_cloudversity_frontend/src/app/globals.css + design.md):
+ * Manrope, navy heading ink, green brand gradient, page/surface/border.
+ * The three system identities (ERP blue, CRM purple, LMS green) are added
+ * on top; LMS reuses Ayadi's own primary green.
+ */
+
+/* Manrope (SIL Open Font License), bundled so the page works offline. */
+@font-face {
+  font-family: "Manrope";
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url("../fonts/manrope-latin-var.woff2") format("woff2");
+}
+:root {
+  /* Ayadi brand */
+  --color-primary: #15803d;
+  --color-primary-hover: #166534;
+  --color-brand-start: #059669;
+  --color-brand-middle: #16a34a;
+  --color-brand-end: #0d9488;
+  --color-brand-teal: #0f766e;
+  --color-accent-soft: #2a3a6e;
+  --color-accent: #1e2b57;
+  --color-accent-strong: #141d3f;
+
+  --color-page: #f8faf9;
+  --color-surface: #ffffff;
+  --color-text: #17221a;
+  --color-muted: #5e6d62;
+  --color-border: #dbe5dd;
+
+  --brand-gradient: linear-gradient(135deg, var(--color-brand-start), var(--color-brand-middle), var(--color-brand-end));
+  --accent-gradient: linear-gradient(135deg, #141d3f, #1e2b57, #2f4480);
+
+  /* System identities */
+  --erp: #2563eb;
+  --erp-ink: #1d4ed8;
+  --erp-soft: #eff5ff;
+  --erp-line: #b9cdf6;
+  --erp-gradient: linear-gradient(135deg, #1e40af, #2563eb 55%, #3b82f6);
+
+  --crm: #7c3aed;
+  --crm-ink: #6d28d9;
+  --crm-soft: #f5f2ff;
+  --crm-line: #cfc0f5;
+  --crm-gradient: linear-gradient(135deg, #5b21b6, #7c3aed 55%, #8b5cf6);
+
+  --lms: var(--color-primary);
+  --lms-ink: var(--color-primary-hover);
+  --lms-soft: #effaf3;
+  --lms-line: #b7dcc3;
+  --lms-gradient: var(--brand-gradient);
+
+  /* Shape & depth (Ayadi: rounded-2xl cards, soft navy-tinted shadows) */
+  --radius-sm: 10px;
+  --radius: 16px;
+  --radius-lg: 24px;
+  --shadow-sm: 0 1px 2px rgba(20, 29, 63, 0.06), 0 1px 1px rgba(20, 29, 63, 0.04);
+  --shadow: 0 10px 30px -12px rgba(20, 29, 63, 0.18), 0 2px 6px -2px rgba(20, 29, 63, 0.08);
+  --shadow-lg: 0 24px 60px -20px rgba(20, 29, 63, 0.32), 0 6px 16px -6px rgba(20, 29, 63, 0.12);
+
+  --font: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Theme hooks: anything inside .theme-x picks up --sys* */
+.theme-erp { --sys: var(--erp); --sys-ink: var(--erp-ink); --sys-soft: var(--erp-soft); --sys-line: var(--erp-line); --sys-gradient: var(--erp-gradient); }
+.theme-crm { --sys: var(--crm); --sys-ink: var(--crm-ink); --sys-soft: var(--crm-soft); --sys-line: var(--crm-line); --sys-gradient: var(--crm-gradient); }
+.theme-lms { --sys: var(--lms); --sys-ink: var(--lms-ink); --sys-soft: var(--lms-soft); --sys-line: var(--lms-line); --sys-gradient: var(--lms-gradient); }

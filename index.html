@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Organization Hierarchy · Ayadi</title>
+    <meta name="description" content="Interactive organization hierarchy for ERP, CRM and LMS (Raihan)." />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/org-chart.css" />
+  </head>
+  <body>
+    <a class="skip" href="#systems">Skip to systems</a>
+
+    <header class="page-head">
+      <div class="page-head__inner">
+        <div class="page-head__text">
+          <p class="eyebrow">Ayadi · Management</p>
+          <h1>Organization <span class="text-gradient">Hierarchy</span></h1>
+          <p class="lede">Choose a system, then click any role to open its reports. Hover a role (or tap it on touch screens) to see its responsibilities.</p>
+        </div>
+        <div id="search" class="page-head__search"></div>
+      </div>
+    </header>
+
+    <main class="page">
+      <div id="data-errors" class="data-errors" role="alert" hidden></div>
+      <nav class="crumbbar" aria-label="Hierarchy path">
+        <button type="button" id="btn-back" class="btn btn--ghost" aria-label="Back to the previous level">
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Back
+        </button>
+        <div id="crumbs" class="crumbbar__trail"></div>
+      </nav>
+
+      <section aria-labelledby="systems-heading">
+        <h2 id="systems-heading" class="sr-only">Systems</h2>
+        <div id="systems" class="systems"></div>
+      </section>
+
+      <section id="explorer" class="explorer" hidden aria-labelledby="explorer-title">
+        <div class="explorer__head">
+          <div>
+            <h2 id="explorer-title" class="explorer__title">Hierarchy</h2>
+            <p id="explorer-legend" class="explorer__legend"></p>
+          </div>
+          <div class="explorer__tools" role="group" aria-label="Tree controls">
+            <button type="button" id="btn-expand" class="btn">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+              Expand all
+            </button>
+            <button type="button" id="btn-collapse" class="btn">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 20 5-5 5 5"/><path d="m7 4 5 5 5-5"/></svg>
+              Collapse all
+            </button>
+          </div>
+        </div>
+
+        <p id="system-notice" class="notice" hidden>
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+          <span></span>
+        </p>
+
+        <div class="canvas-wrap">
+          <div id="canvas" class="canvas" tabindex="-1">
+            <div id="tree" class="tree"></div>
+          </div>
+          <div id="zoombar"></div>
+        </div>
+
+        <ul class="key" aria-label="Legend">
+          <li><span class="key__swatch key__swatch--selected"></span>Selected role</li>
+          <li><span class="key__swatch key__swatch--path"></span>On the selected path</li>
+          <li><span class="key__chip">3 ▾</span>Direct reports — click to expand</li>
+          <li><span class="key__chip">ⓘ 2</span>Listed responsibilities — hover or tap</li>
+          <li><span class="key__chip key__chip--shared">Shared</span>Drawn under two managers in the source</li>
+          <li class="key__nav"><span class="key__chip">✥</span>Drag to move · Ctrl + scroll to zoom</li>
+        </ul>
+      </section>
+    </main>
+
+    <div id="live" class="sr-only" aria-live="polite"></div>
+
+    <!-- Data first, then model, components, controller -->
+    <script src="data/org-builder.js"></script>
+    <script src="data/org-data.js"></script>
+    <script src="js/org-model.js"></script>
+    <script src="js/components/icons.js"></script>
+    <script src="js/components/system-card.js"></script>
+    <script src="js/components/hierarchy-node.js"></script>
+    <script src="js/components/tree-branch.js"></script>
+    <script src="js/components/breadcrumb.js"></script>
+    <script src="js/components/responsibility-popover.js"></script>
+    <script src="js/components/role-search.js"></script>
+    <script src="js/components/canvas-viewport.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
