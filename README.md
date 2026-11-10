@@ -1,6 +1,6 @@
 # Organization Hierarchy
 
-An interactive org chart for **ERP**, **CRM** and **LMS (Raihan)**, built from the handwritten notes in `Adobe Scan 9 Nov 2026.pdf`.
+An interactive org chart for **ERP**, **CRM** and **LMS**, built from the handwritten notes in `Adobe Scan 9 Nov 2026.pdf`.
 
 ## Run
 
@@ -9,6 +9,10 @@ It is a self-contained static page: no build step, no dependencies and no networ
 ```bash
 python -m http.server 5178
 ```
+
+## Light and dark mode
+
+The sun/moon button next to the search box switches between light and dark mode. On a first visit the page follows the device's own setting; after a click, the choice is remembered in that browser. The dark colours follow the Ayadi admin dark theme and live in `css/tokens.css`.
 
 ## Structure
 
@@ -19,7 +23,7 @@ python -m http.server 5178
 | `js/org-model.js` | Read-only helpers over the data: paths, parents, stats, search |
 | `js/components/` | Reusable UI: `SystemCard`, `HierarchyNode`, `TreeBranch` (roles and shared teams), `drawConnectors` (reporting lines), `ResponsibilityPopover`, `Breadcrumb`, `RoleSearch`, `CanvasViewport` (zoom, pan, fit, full screen) |
 | `js/app.js` | Page state (open system, expanded nodes, selection), URL/history sync, events |
-| `css/tokens.css` | Ayadi Cloudversity brand tokens (from `globals.css`) plus the ERP blue, CRM purple and LMS green identities |
+| `css/tokens.css` | Ayadi Cloudversity brand tokens (from `globals.css`), the ERP blue, CRM purple and LMS green identities, and the dark-mode values |
 | `css/org-chart.css` | Layout, connectors, popover, and responsive rules |
 | `fonts/` | Manrope variable font (SIL Open Font License), loaded locally |
 
@@ -32,7 +36,7 @@ duty("erp-cfd", "Approve annual budget");            // add a duty to a role
 role("erp-hr", "HR Manager", "erp-admin");          // add a role under Admin
 role("erp-hr", "HRM", "erp-admin", { full: "Human Resources Manager" });
 reports("crm-so", "crm-sdo");                        // give a role a second manager
-link("crm-so", "lms-raihan", "Admissions → enrollment"); // hand-off between roles
+link("crm-so", "lms-student", "Admissions → enrollment"); // hand-off between roles
 ```
 
 - Put new entries in the **Additions** section at the bottom of the file. Roles added there show no "Source: page" line.
@@ -44,21 +48,21 @@ link("crm-so", "lms-raihan", "Admissions → enrollment"); // hand-off between r
 
 ## Workflow
 
-Below the system cards, **How work moves between systems** shows the loop ERP → CRM → LMS (Raihan) → ERP. Click an arrow to see that hand-off's steps. Use **Play**, **‹** and **›** to walk through them one at a time in a meeting, and ⤢ for full screen. Hover over a role chip to see its responsibilities, or click it to jump to that role in the hierarchy.
+Below the system cards, **How work moves between systems** shows the loop ERP → CRM → LMS → ERP as three flows, one per arrow: **Course launch** (ERP → CRM: proposal, approval, marketing, admissions), **Admission & enrollment** (CRM → LMS: student visit, referral code, admission fee, enrolled in the LMS) and **Learning & reporting** (LMS → ERP: everything in the LMS, then the central log for the directors). Click an arrow to open its flow. Use **Play**, **‹** and **›** to walk through them one at a time in a meeting, and ⤢ for full screen. Hover over a role chip to see its responsibilities, or click it to jump to that role in the hierarchy.
 
 Edit `data/workflow-data.js`, one line per step:
 
 ```js
-step("erp-to-crm", "erp-pc", "Propose course", "What they do", { adds: "Course details" }); // a person
-auto("erp-to-crm", "erp", "Saved in ERP", "What happens");                               // the system
-use("erp-to-crm", "crm-csd", "Sales take admissions", "How the result is used");          // end use
+step("course-launch", "erp-pc", "Propose course", "What they do", { adds: "Course details" }); // a person
+auto("course-launch", "erp", "Saved in ERP", "What happens");                               // the system
+use("course-launch", "crm-csd", "Sales take admissions", "How the result is used");          // end use
 // Options on any step: { adds: "Curriculum" } adds a line to the example course card,
 //                      { status: "Approved" } sets the course status from that step on.
 ```
 
 ## Interaction
 
-- Click a system card to open its hierarchy at Super Admin (or Raihan for LMS).
+- Click a system card to open its hierarchy at its top role (Super Admin for ERP and CRM, Admin for LMS).
 - Click a role to expand or collapse its direct reports.
 - Hover over a role (or focus it, or tap it on touch screens) to see its responsibilities.
 - Use **Back**, the breadcrumb, or the browser's Back button to move up a level. Every state has its own URL, e.g. `#erp/erp-super/erp-admin`.

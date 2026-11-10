@@ -50,8 +50,8 @@
   --crm-line: #cfc0f5;
   --crm-gradient: linear-gradient(135deg, #5b21b6, #7c3aed 55%, #8b5cf6);
 
-  --lms: var(--color-primary);
-  --lms-ink: var(--color-primary-hover);
+  --lms: #15803d;
+  --lms-ink: #166534;
   --lms-soft: #effaf3;
   --lms-line: #b7dcc3;
   --lms-gradient: var(--brand-gradient);
@@ -64,6 +64,29 @@
   --shadow: 0 10px 30px -12px rgba(20, 29, 63, 0.18), 0 2px 6px -2px rgba(20, 29, 63, 0.08);
   --shadow-lg: 0 24px 60px -20px rgba(20, 29, 63, 0.32), 0 6px 16px -6px rgba(20, 29, 63, 0.12);
 
+  /* Neutral UI greys (canvas, tracks, empty circles, faded text, hover) */
+  --canvas: #fbfcfb;
+  --dot: #e1e8e3;
+  --track: #e1e8e3;
+  --ring: #d5ded8;
+  --dashed: #c4cfc7;
+  --faint: #93a199;
+  --hover: #eef3f0;
+  --ok-bg: #e8f6ee;
+  --ok-fill: #15803d;          /* green used as a fill behind white text */
+
+  /* Amber: report steps, "also under" tags, data warnings, search marks */
+  --amber-bg: #fff6e5;
+  --amber-line: #f2c94c;
+  --amber-ink: #8a5600;
+  --amber-fill: #e69a12;
+  --mark: #fdf0b8;
+
+  /* Slate: people outside the org chart (e.g. Student) */
+  --slate-soft: #f1f5f9;
+  --slate: #64748b;
+  --slate-ink: #334155;
+
   --font: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -72,3 +95,93 @@
 .theme-erp { --sys: var(--erp); --sys-ink: var(--erp-ink); --sys-soft: var(--erp-soft); --sys-line: var(--erp-line); --sys-gradient: var(--erp-gradient); }
 .theme-crm { --sys: var(--crm); --sys-ink: var(--crm-ink); --sys-soft: var(--crm-soft); --sys-line: var(--crm-line); --sys-gradient: var(--crm-gradient); }
 .theme-lms { --sys: var(--lms); --sys-ink: var(--lms-ink); --sys-soft: var(--lms-soft); --sys-line: var(--lms-line); --sys-gradient: var(--lms-gradient); }
+
+/* ═══════════════════ Dark theme ═══════════════════
+ * Follows the device setting unless the viewer picks one with the switch
+ * in the header (stored as data-theme on <html>). */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-page: #0b1020;
+  --color-surface: #131b33;
+  --color-text: #e8ecf6;
+  --color-muted: #97a4c0;
+  --color-border: #27324f;
+  --color-primary: #34d399;
+  --color-primary-hover: #6ee7b7;
+  --color-accent: #c3cffa;
+  --accent-gradient: linear-gradient(135deg, #18224b, #243367, #364c96);
+  --erp-ink: #93b4ff;
+  --erp-soft: #16224a;
+  --erp-line: #2f4a8a;
+  --crm-ink: #c4b5fd;
+  --crm-soft: #221a45;
+  --crm-line: #4c3a8a;
+  --lms: #16a34a;
+  --lms-ink: #6ee7b7;
+  --lms-soft: #0f2a24;
+  --lms-line: #1f5e48;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.75), 0 6px 16px -6px rgba(0, 0, 0, 0.4);
+  --canvas: #0e1529;
+  --dot: #1e2945;
+  --track: #27324f;
+  --ring: #36425f;
+  --dashed: #3b4766;
+  --faint: #6f7c99;
+  --hover: #1a2442;
+  --ok-bg: #0f2e25;
+  --ok-fill: #16a34a;
+  --amber-bg: #2a2111;
+  --amber-line: #6b5320;
+  --amber-ink: #f5c46a;
+  --amber-fill: #d4880c;
+  --mark: #5a4a10;
+  --slate-soft: #1e293b;
+  --slate: #94a3b8;
+  --slate-ink: #cbd5e1;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-page: #0b1020;
+    --color-surface: #131b33;
+    --color-text: #e8ecf6;
+    --color-muted: #97a4c0;
+    --color-border: #27324f;
+    --color-primary: #34d399;
+    --color-primary-hover: #6ee7b7;
+    --color-accent: #c3cffa;
+    --accent-gradient: linear-gradient(135deg, #18224b, #243367, #364c96);
+    --erp-ink: #93b4ff;
+    --erp-soft: #16224a;
+    --erp-line: #2f4a8a;
+    --crm-ink: #c4b5fd;
+    --crm-soft: #221a45;
+    --crm-line: #4c3a8a;
+    --lms: #16a34a;
+    --lms-ink: #6ee7b7;
+    --lms-soft: #0f2a24;
+    --lms-line: #1f5e48;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6), 0 2px 6px -2px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 24px 60px -20px rgba(0, 0, 0, 0.75), 0 6px 16px -6px rgba(0, 0, 0, 0.4);
+    --canvas: #0e1529;
+    --dot: #1e2945;
+    --track: #27324f;
+    --ring: #36425f;
+    --dashed: #3b4766;
+    --faint: #6f7c99;
+    --hover: #1a2442;
+    --ok-bg: #0f2e25;
+    --ok-fill: #16a34a;
+    --amber-bg: #2a2111;
+    --amber-line: #6b5320;
+    --amber-ink: #f5c46a;
+    --amber-fill: #d4880c;
+    --mark: #5a4a10;
+    --slate-soft: #1e293b;
+    --slate: #94a3b8;
+    --slate-ink: #cbd5e1;
+  }
+}

@@ -41,6 +41,7 @@
     tree: $("#tree"),
     title: $("#explorer-title"),
     legend: $("#explorer-legend"),
+    sysSwitch: $("#sys-switch"),
     live: $("#live"),
   };
 
@@ -52,6 +53,8 @@
   };
   let entering = null; // path whose children just appeared (for animation)
   let lastPointerWasTouch = false;
+
+  OC.ThemeToggle(document.getElementById("theme-toggle"));
 
   const popover = OC.ResponsibilityPopover(model);
   popover.attach(dom.tree);
@@ -107,9 +110,20 @@
     dom.crumbs.replaceChildren(OC.Breadcrumb(model, state.systemId, state.selected));
     if (!sys) return;
 
-    dom.explorer.className = `explorer theme-${sys.theme}`;
+    // swap only the colour class, so "is-fullscreen" survives a re-render
+    dom.explorer.classList.remove("theme-erp", "theme-crm", "theme-lms");
+    dom.explorer.classList.add(`theme-${sys.theme}`);
+    // ERP / CRM / LMS switch (shown in full screen, where the system cards are hidden)
+    dom.sysSwitch.innerHTML = model.systems
+      .map(
+        (s) =>
+          `<button type="button" class="sys-switch__btn theme-${s.theme}${s.id === sys.id ? " is-active" : ""}" data-switch="${OC.esc(s.id)}" aria-pressed="${s.id === sys.id}" title="${OC.esc(s.fullName || s.name)}"><span class="sys-switch__dot"></span>${OC.esc(s.name)}</button>`
+      )
+      .join("");
     dom.title.textContent = `${sys.name} hierarchy`;
-    dom.legend.textContent = `${sys.fullName} · source ${sys.sourcePages.length > 1 ? "pages" : "page"} ${sys.sourcePages.join(" & ")}`;
+    dom.legend.textContent = sys.sourcePages.length
+      ? `${sys.fullName} · source ${sys.sourcePages.length > 1 ? "pages" : "page"} ${sys.sourcePages.join(" & ")}`
+      : sys.fullName;
     dom.notice.hidden = !sys.notice;
     dom.notice.querySelector("span").textContent = sys.notice || "";
 
@@ -213,6 +227,12 @@
     render();
     commit();
     announce(`${sys.name} opened. ${model.roles[sys.root].title} shown.`);
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      // switched from inside full screen: start the new chart at the top
+      dom.canvas.scrollTop = 0;
+      requestAnimationFrame(() => scrollToSelected("auto"));
+      return;
+    }
     requestAnimationFrame(() =>
       dom.explorer.scrollIntoView({ block: "start", behavior: reduceMotion.matches ? "auto" : "smooth" })
     );
@@ -417,6 +437,11 @@
     render();
     commit();
     scrollToSelected();
+  });
+
+  dom.sysSwitch.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-switch]");
+    if (b) openSystem(b.dataset.switch);
   });
 
   dom.back.addEventListener("click", goBack);

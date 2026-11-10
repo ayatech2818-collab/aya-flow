@@ -21,7 +21,7 @@
       <span class="system-card__glow" aria-hidden="true"></span>
       <span class="system-card__top">
         <span class="system-card__icon">${icon(system.icon, 26)}</span>
-        <span class="system-card__tag">${pages} ${system.sourcePages.join(", ")}</span>
+        ${system.sourcePages.length ? `<span class="system-card__tag">${pages} ${system.sourcePages.join(", ")}</span>` : ""}
       </span>
       <span class="system-card__name">${esc(system.name)}</span>
       <span class="system-card__full">${esc(system.fullName)}</span>

@@ -15,7 +15,7 @@
  *      reports("crm-so", "crm-sdo");
  *
  *  LINK TWO ROLES (a hand-off, not a reporting line):
- *      link("crm-so", "lms-raihan", "Admissions taken → student enrollment");
+ *      link("crm-so", "lms-student", "Admissions taken → student enrollment");
  *
  *  Rules
  *   - Ids must be unique; use lowercase-with-dashes (e.g. "crm-sm-digital").
@@ -46,9 +46,8 @@ system({
 });
 
 system({
-  id: "lms", name: "LMS", fullName: "Raihan", theme: "lms", icon: "graduation",
-  summary: "Student enrollment and fees, fed by admissions taken in CRM.",
-  notice: "The source (page 2) lists Raihan's duties only. It draws no Super Admin, Admin or reporting roles for LMS, so none are shown here."
+  id: "lms", name: "LMS", fullName: "Learning Management System", theme: "lms", icon: "graduation",
+  summary: "Admin, CAC and CPC, the AC, PC and QC teams, mentors and students."
 });
 
 
@@ -69,11 +68,9 @@ duty("erp-super", "Manage Admin");
 duty("erp-super", "Managing the total system");
 
 duty("erp-admin", "Role management");
-duty("erp-admin", "RM hierarchy");
+duty("erp-admin", "Role Management hierarchy");
 duty("erp-admin", "Course proposal permission");
-duty("erp-admin", "Employee list");
-duty("erp-admin", "Salary view");
-duty("erp-admin", "Zoom payment view");
+duty("erp-admin", "Total view");
 duty("erp-admin", "Course publish (after CFD approval)");
 
 duty("erp-ced", "Role management");
@@ -220,6 +217,7 @@ duty("crm-so", "Referral link");
 duty("crm-so", "Taking admission");
 duty("crm-so", "Attend Meeting");
 duty("crm-so", "Content sharing");
+duty("crm-so", "Role Change of employees");
 
 duty("crm-elite-head", "Manage SO (Elite SO)");
 duty("crm-elite-head", "Direct admission");
@@ -230,6 +228,7 @@ duty("crm-elite-so", "Referral link");
 duty("crm-elite-so", "Content sharing");
 duty("crm-elite-so", "Taking admission");
 duty("crm-elite-so", "Attend Meeting");
+duty("crm-elite-so", "Role Change of employees");
 
 
 
@@ -293,6 +292,7 @@ duty("crm-media-coord", "keeping campaigns and schedules aligned");
 
 duty("crm-digital-marketer", "Runs paid ad campaigns");
 duty("crm-digital-marketer", "drives lead generation (WhatsApp-click leads, form-fill leads)");
+duty("crm-digital-marketer", "Manage Meta Ads");
 
 
 duty("crm-smc", "Manages social media posting, scheduling, and engagement");
@@ -304,22 +304,73 @@ duty("crm-content-writer", "Produces content assets (videos, creatives, copy) fo
 duty("crm-seo", "Search Engine Optimization");
 
 
-/* ═══════════════════════════ LMS · page 2 ═══════════════════════════ */
-page(2);
+/* ═══════════════════════════ LMS ═══════════════════════════
+ *  Admin → CAC & CPC (side by side) → AC, PC, QC (shared by CAC & CPC)
+ *  → Mentor (shared by AC, PC & QC) → Student
+ *  Shared roles are drawn once, with a line from each manager. */
+page(null);
 
-role("lms-raihan", "Raihan", "lms", { full: "LMS" });
+role("lms-admin", "Admin", "lms");
 
-duty("lms-raihan", "Student enrollment");
-duty("lms-raihan", "Fee");
+role("lms-cac", "CAC", "lms-admin", { full: "Chief Coordinator" });
+role("lms-cpc", "CPC", "lms-admin", { full: "Chief Coordinator" });
+
+role("lms-ac", "AC", "lms-cac", { full: "Academic Coordinator" });
+role("lms-pc", "PC", "lms-cac", { full: "Program Coordinator" });
+role("lms-qc", "QC", "lms-cac", { full: "Quality Coordinator" });
+reports("lms-ac", "lms-cpc");
+reports("lms-pc", "lms-cpc");
+reports("lms-qc", "lms-cpc");
+
+role("lms-mentor", "Mentor", "lms-ac", { full: "Teacher · phone-first" });
+reports("lms-mentor", "lms-pc");
+reports("lms-mentor", "lms-qc");
+
+role("lms-student", "Student", "lms-mentor");
+
+/* LMS duties — one duty per line.
+ * Work flows down: Chief Coordinators → Coordinators → Mentors → Students.
+ * Data flows back up: attendance, marks, stats, appraisals, absence cases. */
+duty("lms-admin", "Manage all of the LMS");
+duty("lms-admin", "Overview of everything in the LMS");
+
+duty("lms-cac", "Assign coordinators (AC, PC, QC)");
+duty("lms-cac", "Receive the data flowing back up: attendance, marks, stats, appraisals, absence cases");
+
+duty("lms-cpc", "Assign coordinators (AC, PC, QC)");
+duty("lms-cpc", "Receive the data flowing back up: attendance, marks, stats, appraisals, absence cases");
+
+duty("lms-ac", "Set up the class hierarchy");
+duty("lms-ac", "Assign mentors");
+duty("lms-ac", "Receive attendance, marks, stats, appraisals and absence cases from the mentors");
+
+duty("lms-pc", "Set up the class hierarchy");
+duty("lms-pc", "Assign mentors");
+duty("lms-pc", "Receive attendance, marks, stats, appraisals and absence cases from the mentors");
+
+duty("lms-qc", "Set up the class hierarchy");
+duty("lms-qc", "Assign mentors");
+duty("lms-qc", "Receive attendance, marks, stats, appraisals and absence cases from the mentors");
+
+duty("lms-mentor", "Run live classes");
+duty("lms-mentor", "Give assignments");
+duty("lms-mentor", "Keep star boards");
+duty("lms-mentor", "Prepare lesson plans");
+duty("lms-mentor", "Send attendance, marks and stats back up");
+
+duty("lms-student", "Learn");
+duty("lms-student", "Join sessions");
+duty("lms-student", "Submit work");
 
 
-/* ══════════════ LINKS BETWEEN SYSTEMS (arrows on page 2) ══════════════ */
+/* ══════════════ LINKS BETWEEN SYSTEMS (arrows on page 2) ══════════════
+ * Admissions taken in CRM become students in the LMS. */
 
-link("crm-so", "lms-raihan", "Admissions taken → student enrollment");
-link("crm-elite-so", "lms-raihan", "Admissions taken → student enrollment");
-link("crm-sdo", "lms-raihan", "Admissions taken → student enrollment");
-link("crm-csdo", "lms-raihan", "Direct admissions → student enrollment");
-link("crm-elite-head", "lms-raihan", "Direct admissions → student enrollment");
+link("crm-so", "lms-student", "Admissions taken → student enrollment");
+link("crm-elite-so", "lms-student", "Admissions taken → student enrollment");
+link("crm-sdo", "lms-student", "Admissions taken → student enrollment");
+link("crm-csdo", "lms-student", "Direct admissions → student enrollment");
+link("crm-elite-head", "lms-student", "Direct admissions → student enrollment");
 
 
 /* ═══════════════════ ADDITIONS (not from the PDF) ═══════════════════

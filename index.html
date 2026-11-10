@@ -4,7 +4,14 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Organization Hierarchy · Ayadi</title>
-    <meta name="description" content="Interactive organization hierarchy for ERP, CRM and LMS (Raihan)." />
+    <meta name="description" content="Interactive organization hierarchy for ERP, CRM and LMS." />
+    <script>
+      /* Apply the saved light/dark choice before the page paints (no flash). */
+      try {
+        var t = localStorage.getItem("org-theme");
+        if (t === "dark" || t === "light") document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/org-chart.css" />
     <link rel="stylesheet" href="css/workflow.css" />
@@ -19,7 +26,10 @@
           <h1>Organization <span class="text-gradient">Hierarchy</span></h1>
           <p class="lede">Choose a system, then click any role to open its reports. Hover a role (or tap it on touch screens) to see its responsibilities.</p>
         </div>
-        <div id="search" class="page-head__search"></div>
+        <div class="page-head__tools">
+          <div id="search" class="page-head__search"></div>
+          <button type="button" id="theme-toggle" class="theme-toggle" aria-label="Switch to dark mode"></button>
+        </div>
       </div>
     </header>
 
@@ -44,6 +54,7 @@
             <h2 id="explorer-title" class="explorer__title">Hierarchy</h2>
             <p id="explorer-legend" class="explorer__legend"></p>
           </div>
+          <div id="sys-switch" class="sys-switch" role="group" aria-label="Switch hierarchy"></div>
           <div class="explorer__tools" role="group" aria-label="Tree controls">
             <button type="button" id="btn-expand" class="btn">
               <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
@@ -90,6 +101,7 @@
     <script src="data/workflow-data.js"></script>
     <script src="js/org-model.js"></script>
     <script src="js/components/icons.js"></script>
+    <script src="js/components/theme-toggle.js"></script>
     <script src="js/components/system-card.js"></script>
     <script src="js/components/hierarchy-node.js"></script>
     <script src="js/components/tree-branch.js"></script>

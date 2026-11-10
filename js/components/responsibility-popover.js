@@ -49,7 +49,7 @@
           ${role.fullName ? `<p class="popover__full">${esc(role.fullName)}</p>` : ""}
           ${
             managers.length
-              ? `<p class="popover__reports">Reports to <strong>${esc(managers.join(" & "))}</strong></p>`
+              ? `<p class="popover__reports">Reports to <strong>${esc(managers.length < 3 ? managers.join(" & ") : `${managers.slice(0, -1).join(", ")} & ${managers.at(-1)}`)}</strong></p>`
               : parentId == null || !managers.length
                 ? `<p class="popover__reports">Top of the ${esc(system.name)} hierarchy</p>`
                 : ""

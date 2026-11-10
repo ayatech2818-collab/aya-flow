@@ -4,6 +4,7 @@
  *
  *   flow({ id, from, to, title, summary, status })
  *        from / to   system ids ("erp", "crm", "lms")
+ *        via         systems passed through on the way, e.g. via: ["lms"]
  *        status      "active" (has steps) or "planned" (shown as coming next)
  *   step(flowId, roleId, "title", "what happens", { adds })
  *        a person does something; roleId links to the hierarchy.
@@ -16,6 +17,8 @@
  *   review(flowId, roleId, "title", "what happens")
  *        work is reported back to this role, who checks and approves it
  *        (shown as a "report & approve" step)
+ *   outside(flowId, "Student", systemId, "title", "what happens")
+ *        someone outside the org chart does something in a system
  *   phase(flowId, "Marketing")
  *        a section label in the steps list for the steps that follow
  *
@@ -23,6 +26,10 @@
  *        adds    a line added to the example course card at this step
  *        status  the course status from this step on (e.g. "Approved")
  *        from    on a review step: who reports in, when it isn't the step before
+ *        carries ["Student details", "Fee"]  the data passed on at this step
+ *
+ *   Options on flow():
+ *        card, cardHint   title of the example card (default "Example course")
  *
  * Steps appear in the order their lines are written.
  * Mistakes are listed in the yellow notice at the top of the page.
@@ -45,6 +52,8 @@
     if (!flowId || !title) return errors.push(`${kind}() needs a flow id and a title${where()}`);
     steps.push({
       kind, flowId, ref, title,
+      label: opts.label || "",
+      carries: [].concat(opts.carries || []),
       detail: detail || "",
       adds: opts.adds || "",
       status: opts.status || "",
@@ -69,6 +78,9 @@
     use: (flowId, roleId, title, detail, opts) => addStep("use", flowId, roleId, title, detail, opts),
     /** Work is reported back to this role (or roles), who check and approve it. */
     review: (flowId, roleId, title, detail, opts) => addStep("review", flowId, roleId, title, detail, opts),
+    /** Someone outside the org chart (e.g. the student) does something in a system. */
+    outside: (flowId, who, systemId, title, detail, opts = {}) =>
+      addStep("outside", flowId, systemId, title, detail, { ...opts, label: who }),
 
     /** Resolve against the organization data (roles, systems). */
     build(org) {
@@ -77,8 +89,9 @@
       const systemIds = new Set(org.systems.map((s) => s.id));
 
       for (const f of out) {
-        for (const k of ["from", "to"])
-          if (!systemIds.has(f[k])) errors.push(`Flow "${f.id}": unknown system "${f[k]}"${f._at}`);
+        f.via = [].concat(f.via || []);
+        for (const id of [f.from, ...f.via, f.to])
+          if (!systemIds.has(id)) errors.push(`Flow "${f.id}": unknown system "${id}"${f._at}`);
         delete f._at;
       }
 
@@ -89,9 +102,9 @@
           continue;
         }
         let system;
-        if (s.kind === "auto") {
+        if (s.kind === "auto" || s.kind === "outside") {
           if (!systemIds.has(s.ref)) {
-            errors.push(`auto(): unknown system "${s.ref}"${s._at}`);
+            errors.push(`${s.kind}(): unknown system "${s.ref}"${s._at}`);
             continue;
           }
           system = s.ref;
@@ -105,7 +118,7 @@
           system = org.roles[ids[0]].system;
         }
         const { _at, ref, ...rest } = s;
-        const roleIds = s.kind === "auto" ? [] : [].concat(ref);
+        const roleIds = s.kind === "auto" || s.kind === "outside" ? [] : [].concat(ref);
         f.steps.push({ ...rest, system, roleIds, roleId: roleIds[0] || null });
       }
 
@@ -115,5 +128,8 @@
   };
 
   window.WorkflowData = api;
-  Object.assign(window, { flow: api.flow, phase: api.phase, step: api.step, auto: api.auto, use: api.use, review: api.review });
+  Object.assign(window, {
+    flow: api.flow, phase: api.phase, step: api.step, auto: api.auto,
+    use: api.use, review: api.review, outside: api.outside,
+  });
 })();

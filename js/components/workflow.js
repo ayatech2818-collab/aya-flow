@@ -1,5 +1,5 @@
 /*
- * WorkflowSection — how work moves between ERP, CRM and LMS (Raihan).
+ * WorkflowSection — how work moves between ERP, CRM and LMS.
  *
  *   Loop:     the three systems with an arrow for each hand-off
  *             (ERP → CRM → LMS → ERP). Click an arrow to open its flow.
@@ -18,7 +18,18 @@
   "use strict";
   const { icon, esc } = window.OrgChart;
 
-  const PLAY_MS = 3200;
+  /* Autoplay: seconds on each step. The viewer picks one; it is remembered in this browser. */
+  const SPEEDS = [3, 5, 8, 12, 20, 30];
+  const DEFAULT_SECONDS = 5;
+  const SPEED_KEY = "wf-play-seconds";
+  function savedSeconds() {
+    try {
+      const v = Number(localStorage.getItem(SPEED_KEY));
+      return SPEEDS.includes(v) ? v : DEFAULT_SECONDS;
+    } catch {
+      return DEFAULT_SECONDS;
+    }
+  }
 
   /**
    * @param {object} p
@@ -35,6 +46,7 @@
     let current = flows.find((f) => f.status === "active" && f.steps.length) || flows[0];
     let index = 0;
     let timer = 0;
+    let playMs = savedSeconds() * 1000;
     let groupOf = []; // section number of each step
     let openGroups = new Set(); // sections shown expanded in the steps list
     let lastGroup = -1;
@@ -49,24 +61,43 @@
       <div class="wf-panel"></div>`;
     const loopEl = mount.querySelector(".wf-loop");
     const panelEl = mount.querySelector(".wf-panel");
+    function isFullscreen() {
+      return (document.fullscreenElement || document.webkitFullscreenElement) === panelEl;
+    }
 
     /* ═════════════ loop ═════════════ */
 
-    const flowBetween = (a, b) => flows.find((f) => f.from === a && f.to === b);
+    /** Systems a flow passes through, in order: from, via…, to. */
+    const routeOf = (f) => [f.from, ...(f.via || []), f.to];
+    /** The flow covering the hand-off a → b, and which leg of its route that is. */
+    function flowBetween(a, b) {
+      for (const f of flows) {
+        const r = routeOf(f);
+        for (let k = 0; k < r.length - 1; k++) if (r[k] === a && r[k + 1] === b) return { f, leg: k };
+      }
+      return null;
+    }
     const isActive = (f) => f && f.status === "active" && f.steps.length > 0;
 
-    function linkButton(f, cls) {
-      if (!f) return `<span class="${cls} is-empty" aria-hidden="true"></span>`;
+    function linkButton(hit, cls) {
+      if (!hit) return `<span class="${cls} is-empty" aria-hidden="true"></span>`;
+      const { f, leg } = hit;
+      const r = routeOf(f);
+      const a = sys(r[leg]);
+      const b = sys(r[leg + 1]);
       const on = current && f.id === current.id;
       const planned = !isActive(f);
+      // A flow over several hand-offs is named on its first arrow; later arrows say "continued".
+      const title = leg === 0 ? f.title : `${f.title} (continued)`;
+      const status = planned ? "Coming next" : leg === 0 ? `${f.steps.length} steps` : "Same flow";
       return `<button type="button" class="${cls}${on ? " is-selected" : ""}${planned ? " is-planned" : ""}"
         data-flow="${esc(f.id)}" aria-pressed="${on}"
-        aria-label="${esc(sys(f.from).name)} to ${esc(sys(f.to).name)}: ${esc(f.title)}${planned ? ", coming next" : ""}"
-        style="--from: var(--${esc(sys(f.from).theme)}); --to: var(--${esc(sys(f.to).theme)})">
+        aria-label="${esc(a.name)} to ${esc(b.name)}: ${esc(title)}${planned ? ", coming next" : ""}"
+        style="--from: var(--${esc(a.theme)}); --to: var(--${esc(b.theme)})">
         <span class="wf-link__line" aria-hidden="true"></span>
         <span class="wf-link__label">
-          <span class="wf-link__title">${esc(f.title)}</span>
-          <span class="wf-link__status">${planned ? "Coming next" : `${f.steps.length} steps`}</span>
+          <span class="wf-link__title">${esc(title)}</span>
+          <span class="wf-link__status">${status}</span>
         </span>
       </button>`;
     }
@@ -93,8 +124,15 @@
     /* ═════════════ helpers over the current flow ═════════════ */
 
     const stepsOf = () => (current ? current.steps : []);
+    /** "A", "A & B", "A, B & C" */
+    const listNames = (names) =>
+      names.length < 3 ? names.join(" & ") : `${names.slice(0, -1).join(", ")} & ${names.at(-1)}`;
     const who = (s) =>
-      s.kind === "auto" ? `${sys(s.system).name} system` : s.roleIds.map((id) => model.roles[id].title).join(" & ");
+      s.kind === "auto"
+        ? `${sys(s.system).name} system`
+        : s.kind === "outside"
+          ? s.label
+          : listNames(s.roleIds.map((id) => model.roles[id].title));
 
     /** Course status after step i (the last status set at or before it). */
     function statusAt(i) {
@@ -103,6 +141,8 @@
       return st;
     }
     const allStatuses = () => [...new Set(stepsOf().map((s) => s.status).filter(Boolean))];
+    /** "course" / "student" / "log": the noun on the example card. */
+    const cardNoun = () => (current.card || "Example course").replace(/^example\s+/i, "");
     const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     /* ═════════════ panel skeleton ═════════════ */
@@ -115,16 +155,33 @@
       const f = current;
       if (!f) return (panelEl.innerHTML = "");
       const from = sys(f.from);
-      const to = sys(f.to);
-      panelEl.className = `wf-panel theme-${from.theme}`;
+      const routeChips = routeOf(f)
+        .map((id) => `<span class="wf-chip theme-${esc(sys(id).theme)}">${esc(sys(id).name)}</span>`)
+        .join(icon("arrowRight", 14));
+      // keep "is-fullscreen" when the flow changes from inside full screen
+      panelEl.className = `wf-panel theme-${from.theme}${isFullscreen() ? " is-fullscreen" : ""}`;
+
+      // ERP → CRM / CRM → LMS / LMS → ERP switch (shown in full screen, where the loop is out of view)
+      const flowSwitch = `
+        <div class="wf-switch" role="group" aria-label="Switch flow">
+          ${flows
+            .map((x) => {
+              const on = x.id === f.id;
+              return `<button type="button" class="wf-switch__btn theme-${esc(sys(x.from).theme)}${on ? " is-active" : ""}"
+                data-switch-flow="${esc(x.id)}" aria-pressed="${on}" title="${esc(x.title)}"
+                style="--to: var(--${esc(sys(x.to).theme)})">
+                <span class="wf-switch__dot"></span>${esc(sys(x.from).name)}${icon("arrowRight", 13)}${esc(sys(x.to).name)}
+              </button>`;
+            })
+            .join("")}
+        </div>`;
 
       const head = `
+        ${flowSwitch}
         <div class="wf-panel__head">
           <div class="wf-panel__intro">
             <p class="wf-route">
-              <span class="wf-chip theme-${esc(from.theme)}">${esc(from.name)}</span>
-              ${icon("arrowRight", 14)}
-              <span class="wf-chip theme-${esc(to.theme)}">${esc(to.name)}</span>
+              ${routeChips}
               <span class="wf-badge${isActive(f) ? "" : " is-planned"}">${isActive(f) ? "In use" : "Coming next"}</span>
             </p>
             <h3 class="wf-panel__title">${esc(f.title)}</h3>
@@ -136,7 +193,14 @@
                    <button type="button" class="wf-btn" data-act="prev" aria-label="Previous step">${icon("chevronLeft", 16)}</button>
                    <button type="button" class="wf-btn wf-btn--play" data-act="play"></button>
                    <button type="button" class="wf-btn" data-act="next" aria-label="Next step">${icon("chevronRight", 16)}</button>
-                   <button type="button" class="wf-btn" data-act="full" aria-label="Full screen" title="Full screen">${icon("maximize", 15)}</button>
+                   <label class="wf-speed" title="Time on each step while playing">
+                     ${icon("clock", 15)}
+                     <span class="sr-only">Time on each step</span>
+                     <select data-act="speed">
+                       ${SPEEDS.map((s) => `<option value="${s}"${s * 1000 === playMs ? " selected" : ""}>${s}s / step</option>`).join("")}
+                     </select>
+                   </label>
+                   <button type="button" class="wf-btn" data-act="full" aria-label="${isFullscreen() ? "Exit full screen" : "Full screen"}" title="${isFullscreen() ? "Exit full screen (Esc)" : "Full screen"}">${icon(isFullscreen() ? "minimize" : "maximize", 15)}</button>
                  </div>`
               : ""
           }
@@ -190,7 +254,7 @@
             i === 0 || groupOf[i - 1] !== gi
               ? `<li class="wj-group theme-${esc(S.theme)}" data-group="${gi}">
                    <button type="button" class="wj-group__btn" data-toggle-group="${gi}" aria-expanded="false">
-                     ${icon(S.icon, 13)} ${esc(S.name)}${s.phase ? `<span class="wj-group__phase">${esc(s.phase)}</span>` : ""}
+                     <span title="${esc(S.name)}">${icon(S.icon, 13)}</span>${s.phase ? `<span class="wj-group__phase" title="${esc(s.phase)}">${esc(s.phase)}</span>` : esc(S.name)}
                      <span class="wj-group__count">${countIn(gi)}</span>
                      ${icon("chevronDown", 14, "wj-group__chev")}
                    </button>
@@ -202,7 +266,7 @@
               <button type="button" class="wj-item__btn" data-goto="${i}">
                 <span class="wj-dot">${i + 1}</span>
                 <span class="wj-item__text">
-                  <span class="wj-item__who">${s.kind === "auto" ? icon("cog", 11) : s.kind === "review" ? icon("reply", 11) : ""}${esc(who(s))}</span>
+                  <span class="wj-item__who">${s.kind === "auto" ? icon("cog", 11) : s.kind === "review" ? icon("reply", 11) : s.kind === "outside" ? icon("user", 11) : ""}${esc(who(s))}</span>
                   <span class="wj-item__title">${esc(s.title)}</span>
                 </span>
               </button>
@@ -244,7 +308,7 @@
       const status = statusAt(i);
       const changed = s.status && s.status !== statusAt(i - 1);
       // One chip per role; a shared step shows "A & B".
-      const roles = s.kind === "auto" ? [] : s.roleIds.map((id) => ({ id, role: model.roles[id] }));
+      const roles = s.roleIds.map((id) => ({ id, role: model.roles[id] }));
       const actor = roles.length
         ? roles
             .map(
@@ -253,8 +317,13 @@
                   role.fullName ? `<span class="wj-actor__full">${esc(role.fullName)}</span>` : ""
                 }</span>`
             )
-            .join(`<span class="wj-actor__and">&amp;</span>`)
-        : `<span class="wj-auto">${icon("cog", 14)} Done automatically by the ${esc(S.name)} system</span>`;
+            .map((html, k, all) =>
+              k === 0 ? html : `<span class="wj-actor__and">${k === all.length - 1 ? "&amp;" : ","}</span>${html}`
+            )
+            .join("")
+        : s.kind === "outside"
+          ? `<span class="wj-outside">${icon("user", 15)} ${esc(s.label)}</span><span class="wj-actor__full">in ${esc(S.name)}</span>`
+          : `<span class="wj-auto">${icon("cog", 14)} Done automatically by the ${esc(S.name)} system</span>`;
 
       return `
         <article class="wj-card theme-${esc(S.theme)}${reduceMotion.matches ? "" : " is-enter"}">
@@ -271,9 +340,16 @@
           <h3 class="wj-card__title">${esc(s.title)}</h3>
           ${s.detail ? `<p class="wj-card__detail">${esc(s.detail)}</p>` : ""}
           <dl class="wj-facts">
-            ${s.adds ? `<div><dt>Adds to the course</dt><dd>${icon("plus", 13)} ${esc(s.adds)}</dd></div>` : ""}
+            ${s.adds ? `<div><dt>Adds to the ${esc(cardNoun())}</dt><dd>${icon("plus", 13)} ${esc(s.adds)}</dd></div>` : ""}
             ${status ? `<div><dt>Course status</dt><dd><span class="wj-status s-${esc(slug(status))}${changed ? " is-new" : ""}">${esc(status)}</span></dd></div>` : ""}
           </dl>
+          ${
+            s.carries.length
+              ? `<div class="wj-carries"><p>${icon("package", 14)} Data passed on</p><ul>${s.carries
+                  .map((c) => `<li>${esc(c)}</li>`)
+                  .join("")}</ul></div>`
+              : ""
+          }
           <div class="wj-handoff">
             <span>${prev ? `${icon("chevronLeft", 13)} From <strong>${esc(who(prev))}</strong>` : "Start of the flow"}</span>
             <span>${next ? `Next <strong>${esc(who(next))}</strong> ${icon("chevronRight", 13)}` : `End of the flow ${icon("check", 13)}`}</span>
@@ -337,7 +413,7 @@
       return `
         <div class="wj-course__head">
           <span class="wj-course__icon">${icon("file", 16)}</span>
-          <div><strong>Example course</strong><small>How the record grows</small></div>
+          <div><strong>${esc(current.card || "Example course")}</strong><small>${esc(current.cardHint || "How the record grows")}</small></div>
           <span class="wj-where theme-${esc(S.theme)}">In ${esc(S.name)}</span>
         </div>
         <ul class="wj-fields">${fields}</ul>
@@ -406,7 +482,7 @@
       t.classList.remove("is-running");
       if (timer) {
         void t.offsetWidth; // restart the bar
-        t.style.setProperty("--play-ms", `${PLAY_MS}ms`);
+        t.style.setProperty("--play-ms", `${playMs}ms`);
         t.classList.add("is-running");
       }
     }
@@ -449,32 +525,53 @@
       clearInterval(timer);
       timer = 0;
     }
-    function togglePlay() {
-      if (timer) return (stop(), update());
-      if (index >= stepsOf().length - 1) index = 0;
+    function startTimer() {
+      clearInterval(timer);
       timer = setInterval(() => {
         if (index >= stepsOf().length - 1) {
           stop();
           update();
         } else go(index + 1);
-      }, PLAY_MS);
+      }, playMs);
+    }
+    function togglePlay() {
+      if (timer) return (stop(), update());
+      if (index >= stepsOf().length - 1) index = 0;
+      startTimer();
       update();
+    }
+    /** New time per step; while playing, the current step restarts its count. */
+    function setSpeed(seconds) {
+      if (!SPEEDS.includes(seconds)) return;
+      playMs = seconds * 1000;
+      try {
+        localStorage.setItem(SPEED_KEY, String(seconds));
+      } catch {
+        /* private mode: still applies for this visit */
+      }
+      if (timer) {
+        startTimer();
+        update();
+      }
     }
 
     function toggleFullscreen() {
-      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-      if (fsEl === panelEl) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      if (isFullscreen()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
       else (panelEl.requestFullscreen || panelEl.webkitRequestFullscreen)?.call(panelEl);
     }
-    document.addEventListener("fullscreenchange", () => {
-      const on = document.fullscreenElement === panelEl;
+    const onFullscreen = () => {
+      const on = isFullscreen();
+      panelEl.classList.toggle("is-fullscreen", on);
       const b = panelEl.querySelector('[data-act="full"]');
       if (b) {
         b.innerHTML = icon(on ? "minimize" : "maximize", 15);
         b.setAttribute("aria-label", on ? "Exit full screen" : "Full screen");
+        b.title = on ? "Exit full screen (Esc)" : "Full screen";
       }
       requestAnimationFrame(() => placeMarker(true));
-    });
+    };
+    document.addEventListener("fullscreenchange", onFullscreen);
+    document.addEventListener("webkitfullscreenchange", onFullscreen);
 
     /* ═════════════ events ═════════════ */
 
@@ -491,6 +588,16 @@
     });
 
     panelEl.addEventListener("click", (e) => {
+      const sw = e.target.closest("[data-switch-flow]");
+      if (sw) {
+        if (sw.dataset.switchFlow === current?.id) return;
+        popover.hide();
+        current = flows.find((f) => f.id === sw.dataset.switchFlow);
+        renderLoop();
+        renderPanel();
+        panelEl.scrollTop = 0;
+        return;
+      }
       const find = e.target.closest("[data-open-role]");
       if (find) {
         stop();
@@ -513,6 +620,10 @@
       else if (act === "next") (stop(), go(index + 1));
       else if (act === "play") togglePlay();
       else if (act === "full") toggleFullscreen();
+    });
+
+    panelEl.addEventListener("change", (e) => {
+      if (e.target.matches('[data-act="speed"]')) setSpeed(Number(e.target.value));
     });
 
     panelEl.addEventListener("keydown", (e) => {
