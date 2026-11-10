@@ -384,8 +384,11 @@ link("crm-elite-head", "lms-student", "Direct admissions → student enrollment"
  * ═════════════════════════════════════════════════════════════════════ */
 page(null);
 
-/* ERP · HR reports to CED, alongside PC */
-role("erp-hr", "HR", "erp-ced");
+/* ERP · HR reports to CRD */
+role("erp-hr", "HR", "erp-crd");
 duty("erp-hr", "Manage all salary");
 duty("erp-hr", "Statutory compliance");
+
+/* ERP · Account reports to FM, alongside AM */
+role("erp-account", "Account", "erp-fm");
 
