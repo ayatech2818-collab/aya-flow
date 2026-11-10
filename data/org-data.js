@@ -261,8 +261,8 @@ role("crm-graphics", "Graphics Designer", "crm-media-coord");
 role("crm-video-maker", "Video Maker", "crm-media-coord");
 
 // Digital Marketer's team
-role("crm-adm", "ADM", "crm-digital-marketer");
-role("crm-seo", "SEO", "crm-digital-marketer");
+role("crm-adm", "ADM", "crm-digital-marketer", { full: "Assistant Digital Marketer" });
+role("crm-seo", "SEO", "crm-digital-marketer", { full: "Search Engine Optimization" });
 role("crm-assistant-smc", "Assistant SMC", "crm-smc");
 
 // No duties are listed in the source for the CRM Super Admin, Admin, CSD, CMD

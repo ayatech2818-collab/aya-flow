@@ -6,12 +6,23 @@
  *        from / to   system ids ("erp", "crm", "lms")
  *        status      "active" (has steps) or "planned" (shown as coming next)
  *   step(flowId, roleId, "title", "what happens", { adds })
- *        a person does something; roleId links to the hierarchy
+ *        a person does something; roleId links to the hierarchy.
+ *        Several people doing it together: ["role-a", "role-b"]
  *   auto(flowId, systemId, "title", "what happens")
  *        the system does something by itself (save, sync…)
  *   use(flowId, roleId, "title", "what happens")
- *        how the result is used at the end; several use() lines are shown
- *        side by side as the end of the flow
+ *        how the result is used at the end of the flow
+ *
+ *   review(flowId, roleId, "title", "what happens")
+ *        work is reported back to this role, who checks and approves it
+ *        (shown as a "report & approve" step)
+ *   phase(flowId, "Marketing")
+ *        a section label in the steps list for the steps that follow
+ *
+ *   Options on any step:
+ *        adds    a line added to the example course card at this step
+ *        status  the course status from this step on (e.g. "Approved")
+ *        from    on a review step: who reports in, when it isn't the step before
  *
  * Steps appear in the order their lines are written.
  * Mistakes are listed in the yellow notice at the top of the page.
@@ -21,6 +32,7 @@
 
   const flows = [];
   const steps = [];
+  const phaseOf = {}; // current phase label per flow
   const errors = [];
 
   const where = () => {
@@ -31,7 +43,15 @@
 
   function addStep(kind, flowId, ref, title, detail, opts = {}) {
     if (!flowId || !title) return errors.push(`${kind}() needs a flow id and a title${where()}`);
-    steps.push({ kind, flowId, ref, title, detail: detail || "", adds: opts.adds || "", _at: where() });
+    steps.push({
+      kind, flowId, ref, title,
+      detail: detail || "",
+      adds: opts.adds || "",
+      status: opts.status || "",
+      from: opts.from || "",
+      phase: opts.phase || phaseOf[flowId] || "",
+      _at: where(),
+    });
   }
 
   const api = {
@@ -40,9 +60,15 @@
       if (flows.some((f) => f.id === def.id)) return errors.push(`Flow "${def.id}" is defined twice${where()}`);
       flows.push({ status: "planned", summary: "", ...def, _at: where() });
     },
+    /** Section label in the steps list for the steps that follow. */
+    phase(flowId, label) {
+      phaseOf[flowId] = label || "";
+    },
     step: (flowId, roleId, title, detail, opts) => addStep("step", flowId, roleId, title, detail, opts),
     auto: (flowId, systemId, title, detail, opts) => addStep("auto", flowId, systemId, title, detail, opts),
     use: (flowId, roleId, title, detail, opts) => addStep("use", flowId, roleId, title, detail, opts),
+    /** Work is reported back to this role (or roles), who check and approve it. */
+    review: (flowId, roleId, title, detail, opts) => addStep("review", flowId, roleId, title, detail, opts),
 
     /** Resolve against the organization data (roles, systems). */
     build(org) {
@@ -70,15 +96,17 @@
           }
           system = s.ref;
         } else {
-          const role = org.roles[s.ref];
-          if (!role) {
-            errors.push(`${s.kind}(): unknown role "${s.ref}"${s._at}`);
+          const ids = Array.isArray(s.ref) ? s.ref : [s.ref];
+          const missing = ids.filter((id) => !org.roles[id]);
+          if (!ids.length || missing.length) {
+            errors.push(`${s.kind}(): unknown role "${missing[0] ?? ""}"${s._at}`);
             continue;
           }
-          system = role.system;
+          system = org.roles[ids[0]].system;
         }
         const { _at, ref, ...rest } = s;
-        f.steps.push({ ...rest, system, roleId: s.kind === "auto" ? null : ref });
+        const roleIds = s.kind === "auto" ? [] : [].concat(ref);
+        f.steps.push({ ...rest, system, roleIds, roleId: roleIds[0] || null });
       }
 
       if (errors.length) console.warn("[workflow-data] " + errors.join("\n[workflow-data] "));
@@ -87,5 +115,5 @@
   };
 
   window.WorkflowData = api;
-  Object.assign(window, { flow: api.flow, step: api.step, auto: api.auto, use: api.use });
+  Object.assign(window, { flow: api.flow, phase: api.phase, step: api.step, auto: api.auto, use: api.use, review: api.review });
 })();

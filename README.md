@@ -52,6 +52,8 @@ Edit `data/workflow-data.js`, one line per step:
 step("erp-to-crm", "erp-pc", "Propose course", "What they do", { adds: "Course details" }); // a person
 auto("erp-to-crm", "erp", "Saved in ERP", "What happens");                               // the system
 use("erp-to-crm", "crm-csd", "Sales take admissions", "How the result is used");          // end use
+// Options on any step: { adds: "Curriculum" } adds a line to the example course card,
+//                      { status: "Approved" } sets the course status from that step on.
 ```
 
 ## Interaction
